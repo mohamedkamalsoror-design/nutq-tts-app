@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نُطق — تحويل النص إلى صوت عربي واقعي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;500;600;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E0B10;
+    --bg-panel:#17121A;
+    --bg-panel-2:#1D1720;
+    --border:#2C2530;
+    --gold:#C9A227;
+    --gold-soft:#E8C766;
+    --teal:#1F6F5C;
+    --teal-soft:#2E9A80;
+    --text:#F3ECE2;
+    --text-muted:#A99C93;
+    --text-dim:#786B72;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Cairo', sans-serif;
+    line-height:1.7;
+    overflow-x:hidden;
+  }
+  .display{font-family:'Aref Ruqaa', serif;}
+  .utility{font-family:'Tajawal', sans-serif;}
+  a{color:inherit; text-decoration:none;}
+  ::selection{background:var(--gold); color:#0E0B10;}
+
+  .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(243,236,226,0.035) 1px, transparent 0);
+    background-size: 22px 22px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(14,11,16,0.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 0;
+  }
+  .logo{
+    font-family:'Aref Ruqaa', serif;
+    font-size:28px; font-weight:700;
+    color:var(--gold-soft);
+    letter-spacing:1px;
+  }
+  .nav-links{display:flex; gap:34px; align-items:center;}
+  .nav-links a{
+    font-size:15px; color:var(--text-muted);
+    transition:color .2s ease;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:11px 26px;
+    border-radius:999px;
+    font-weight:600; font-size:15px;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+  }
+  .btn-gold{
+    background:linear-gradient(180deg, var(--gold-soft), var(--gold));
+    color:#1B1305;
+  }
+  .btn-gold:hover{transform:translateY(-2px); box-shadow:0 10px 24px rgba(201,162,39,0.28);}
+  .btn-ghost{
+    background:transparent; color:var(--text); border-color:var(--border);
+  }
+  .btn-ghost:hover{border-color:var(--gold); color:var(--gold-soft);}
+
+  .hero{
+    position:relative; z-index:1;
+    padding:96px 0 60px;
+    text-align:center;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:'Tajawal'; font-size:13px; letter-spacing:.5px;
+    color:var(--gold-soft);
+    background:rgba(201,162,39,0.08);
+    border:1px solid rgba(201,162,39,0.28);
+    padding:7px 16px; border-radius:999px;
+    margin-bottom:28px;
+    animation:fadeUp .7s ease both;
+  }
+  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--teal-soft);}
+  h1{
+    font-family:'Aref Ruqaa', serif;
+    font-weight:700;
+    font-size:clamp(40px, 6vw, 74px);
+    line-height:1.25;
+    max-width:880px;
+    margin:0 auto 22px;
+    animation:fadeUp .8s .05s ease both;
+  }
+  h1 span{color:var(--gold-soft);}
+  .hero-sub{
+    max-width:560px; margin:0 auto 40px;
+    color:var(--text-muted); font-size:18px;
+    animation:fadeUp .8s .1s ease both;
+  }
+  .hero-cta{
+    display:flex; gap:16px; justify-content:center; margin-bottom:70px;
+    animation:fadeUp .8s .15s ease both;
+  }
+
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .waveform{
+    position:relative;
+    height:120px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    max-width:760px;
+    margin:0 auto;
+  }
+  .waveform .bar{
+    width:4px;
+    border-radius:3px;
+    background:linear-gradient(180deg, var(--gold-soft), var(--teal-soft));
+    opacity:.75;
+    transform-origin:center;
+    animation:idle 3.2s ease-in-out infinite;
+  }
+  .waveform .bar.dot::after{
+    content:"";
+    position:absolute;
+  }
+  @keyframes idle{
+    0%,100%{transform:scaleY(0.35);}
+    50%{transform:scaleY(1);}
+  }
+  .waveform.speaking .bar{
+    animation-name:speak;
+    animation-duration:.5s;
+  }
+  @keyframes speak{
+    0%,100%{transform:scaleY(.25);}
+    50%{transform:scaleY(1);}
+  }
+
+  section{position:relative; z-index:1; padding:90px 0;}
+  .section-head{max-width:640px; margin:0 auto 52px; text-align:center;}
+  .section-eyebrow{
+    font-family:'Tajawal'; font-size:13px; color:var(--teal-soft);
+    letter-spacing:.5px; margin-bottom:10px;
+  }
+  .section-title{
+    font-family:'Aref Ruqaa', serif; font-size:clamp(28px,4vw,40px);
+    margin-bottom:14px;
+  }
+  .section-sub{color:var(--text-muted); font-size:16px;}
+
+  .demo{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:22px;
+    max-width:840px; margin:0 auto;
+    padding:36px;
+  }
+  .settings{
+    background:var(--bg-panel-2);
+    border:1px dashed var(--border);
+    border-radius:12px;
+    padding:20px 22px;
+    margin-bottom:22px;
+  }
+  .settings-head{
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer;
+  }
+  .settings-title{font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px;}
+  .settings-title .badge{
+    font-family:'Tajawal'; font-size:11px; color:var(--teal-soft);
+    border:1px solid rgba(46,154,128,0.4); border-radius:999px; padding:2px 10px;
+  }
+  .settings-toggle{color:var(--text-dim); font-size:13px; font-family:'Tajawal';}
+  .settings-body{margin-top:16px; display:none;}
+  .settings-body.open{display:block;}
+  .settings-row{display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap;}
+  .settings-row input{
+    flex:1; min-width:220px;
+    background:var(--bg-panel); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:12px 14px; font-family:'Cairo'; font-size:14px;
+  }
+  .settings-row input:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  .settings-hint{font-family:'Tajawal'; font-size:12.5px; color:var(--text-dim); line-height:1.8;}
+  .settings-hint a{color:var(--gold-soft); text-decoration:underline;}
+  .status-line{
+    font-family:'Tajawal'; font-size:13px; margin-top:10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .status-dot{width:7px; height:7px; border-radius:50%; background:var(--text-dim);}
+  .status-line.ok .status-dot{background:var(--teal-soft);}
+  .status-line.err .status-dot{background:#C9524B;}
+  .demo-row{display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap;}
+  select, textarea{
+    width:100%;
+    background:var(--bg-panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:14px 16px;
+    font-family:'Cairo';
+    font-size:15px;
+    resize:vertical;
+  }
+  textarea{min-height:110px; line-height:1.8;}
+  select{cursor:pointer; max-width:220px;}
+  textarea:focus, select:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  .demo-foot{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:20px; flex-wrap:wrap; gap:14px;
+  }
+  .demo-note{font-family:'Tajawal'; font-size:13px; color:var(--text-dim);}
+  .mini-wave{
+    display:flex; align-items:center; gap:3px; height:34px;
+  }
+  .mini-wave .bar{width:3px; border-radius:2px; background:var(--teal-soft); opacity:.6; animation:idle 2.6s ease-in-out infinite;}
+  .mini-wave.speaking .bar{animation-name:speak; animation-duration:.45s;}
+
+  .grid-4{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:28px 22px;
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .card:hover{border-color:var(--gold); transform:translateY(-4px);}
+  .card .icon{
+    width:38px; height:38px; margin-bottom:18px;
+    color:var(--gold-soft);
+  }
+  .card h3{font-size:18px; margin-bottom:10px; font-weight:700;}
+  .card p{color:var(--text-muted); font-size:14.5px;}
+
+  .usecases{display:flex; gap:16px; flex-wrap:wrap; justify-content:center;}
+  .usecase{
+    display:flex; align-items:center; gap:10px;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    padding:14px 22px; border-radius:999px;
+    font-size:14.5px; color:var(--text-muted);
+  }
+  .usecase .dot{width:7px;height:7px;border-radius:50%; background:var(--teal-soft);}
+
+  .voice-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px;}
+  .voice-card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:24px 20px;
+    text-align:center;
+  }
+  .voice-avatar{
+    width:56px; height:56px; border-radius:50%;
+    margin:0 auto 14px;
+    background:linear-gradient(135deg, var(--teal), var(--gold));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Aref Ruqaa'; font-size:22px; color:#0E0B10; font-weight:700;
+  }
+  .voice-name{font-weight:700; font-size:17px; margin-bottom:2px;}
+  .voice-dialect{font-family:'Tajawal'; font-size:12.5px; color:var(--teal-soft); margin-bottom:14px;}
+  .voice-sample{font-size:14px; color:var(--text-muted); margin-bottom:16px; min-height:44px;}
+  .play-btn{
+    width:40px; height:40px; border-radius:50%;
+    background:var(--bg-panel-2); border:1px solid var(--border);
+    color:var(--gold-soft); font-size:14px;
+    cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .play-btn:hover{border-color:var(--gold); background:rgba(201,162,39,0.1);}
+
+  .pricing-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
+  .price-card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:34px 28px;
+    display:flex; flex-direction:column;
+  }
+  .price-card.featured{
+    border-color:var(--gold);
+    background:linear-gradient(180deg, rgba(201,162,39,0.06), var(--bg-panel));
+    position:relative;
+  }
+  .price-card.featured::before{
+    content:"الأكثر طلبًا";
+    position:absolute; top:-13px; right:28px;
+    background:var(--gold); color:#1B1305;
+    font-size:12px; font-weight:700; font-family:'Tajawal';
+    padding:5px 14px; border-radius:999px;
+  }
+  .price-tier{font-family:'Tajawal'; font-size:13px; color:var(--text-dim); margin-bottom:6px;}
+  .price-name{font-size:20px; font-weight:700; margin-bottom:16px;}
+  .price-value{font-family:'Aref Ruqaa'; font-size:38px; color:var(--gold-soft); margin-bottom:20px;}
+  .price-value span{font-family:'Cairo'; font-size:15px; color:var(--text-dim); font-weight:400;}
+  .price-list{list-style:none; margin-bottom:26px; flex:1;}
+  .price-list li{
+    font-size:14.5px; color:var(--text-muted); padding:8px 0;
+    border-top:1px solid var(--border);
+    display:flex; gap:8px; align-items:baseline;
+  }
+  .price-list li:first-child{border-top:none;}
+  .price-list li::before{content:"—"; color:var(--teal-soft);}
+
+  .cta-band{
+    text-align:center;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:24px;
+    padding:70px 40px;
+    max-width:900px; margin:0 auto;
+  }
+  .cta-band h2{font-family:'Aref Ruqaa'; font-size:clamp(26px,4vw,38px); margin-bottom:16px;}
+  .cta-band p{color:var(--text-muted); margin-bottom:30px;}
+
+  footer{
+    border-top:1px solid var(--border);
+    padding:44px 0 30px;
+    position:relative; z-index:1;
+  }
+  .footer-inner{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;}
+  .footer-links{display:flex; gap:26px; font-size:14px; color:var(--text-muted);}
+  .footer-copy{font-family:'Tajawal'; font-size:12.5px; color:var(--text-dim);}
+
+  @media (max-width:900px){
+    .grid-4{grid-template-columns:repeat(2,1fr);}
+    .voice-grid{grid-template-columns:repeat(2,1fr);}
+    .pricing-grid{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+  }
+  @media (max-width:560px){
+    .grid-4{grid-template-columns:1fr;}
+    .voice-grid{grid-template-columns:1fr;}
+    .hero-cta{flex-direction:column; align-items:center;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001s !important; animation-iteration-count:1 !important; transition:none !important;}
+  }
+
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="logo">نُطق</div>
+    <nav class="nav-links">
+      <a href="#demo">جرّب الآن</a>
+      <a href="#features">المزايا</a>
+      <a href="#voices">الأصوات</a>
+      <a href="#pricing">الأسعار</a>
+    </nav>
+    <a href="#demo" class="btn btn-gold">ابدأ مجانًا</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span> تحويل النص إلى صوت عربي</div>
+    <h1>صوتك الإعلاني، <span>بلا استوديو</span></h1>
+    <p class="hero-sub">حوّل نصوصك إلى تعليق صوتي عربي طبيعي خلال ثوانٍ — جاهز لإعلاناتك وفيديوهات الريلز والقصص.</p>
+    <div class="hero-cta">
+      <a href="#demo" class="btn btn-gold">جرّب مجانًا</a>
+      <a href="#voices" class="btn btn-ghost">استعرض الأصوات</a>
+    </div>
+    <div class="waveform" id="heroWave"></div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">جرّب بنفسك</div>
+      <h2 class="section-title">اكتب، اختر صوتًا، واستمع فورًا</h2>
+      <p class="section-sub">تجربة مباشرة داخل المتصفح — لا حاجة لتثبيت أي شيء.</p>
+    </div>
+
+    <div class="demo">
+      <div class="settings">
+        <div class="settings-title">⚙️ محرّك الصوت <span class="badge">ElevenLabs</span></div>
+        <div class="status-line" id="apiStatus"><span class="status-dot"></span><span id="apiStatusText">جاري الاتصال بالخادم…</span></div>
+      </div>
+      <div class="demo-row">
+        <select id="voiceSelect">
+          <option value="">جاري تحميل الأصوات المتاحة…</option>
+        </select>
+      </div>
+      <textarea id="demoText" placeholder="اكتب نص إعلانك هنا… مثال: هذا الصيف، جرّب العرض الجديد قبل نفاده.">هذا الصيف، جرّب العرض الجديد قبل نفاده.</textarea>
+      <div class="demo-foot">
+        <button class="btn btn-gold" id="playDemo">🔊 توليد الصوت</button>
+        <div class="mini-wave" id="demoWave">
+        </div>
+      </div>
+      <p class="demo-note" id="demoNote">تعتمد هذه المعاينة على أصوات المتصفح العربية المتوفرة على جهازك.</p>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">لماذا نُطق</div>
+      <h2 class="section-title">صُمم لصوت يُقنع، لا يقرأ فقط</h2>
+    </div>
+    <div class="grid-4">
+      <div class="card">
+        <h3>لهجات حية</h3>
+        <p>أصوات بالفصحى والمصرية والخليجية والشامية، بنبرة تحاكي المتحدث الأصلي لا الآلة.</p>
+      </div>
+      <div class="card">
+        <h3>أداء إعلاني</h3>
+        <p>تحكم في الإيقاع والتنغيم لصوت يشبه إعلانات الراديو والتلفزيون الحقيقية.</p>
+      </div>
+      <div class="card">
+        <h3>تصدير فوري</h3>
+        <p>ملفات WAV وMP3 بجودة استوديو، جاهزة للاستخدام مباشرة دون معالجة إضافية.</p>
+      </div>
+      <div class="card">
+        <h3>تكامل سلس</h3>
+        <p>صيغ متوافقة مع Premiere وCapCut وFinal Cut لإدراج الصوت بخطوة واحدة.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">أين يُستخدم</div>
+      <h2 class="section-title">من الفكرة إلى المنشور، بصوت واحد</h2>
+    </div>
+    <div class="usecases">
+      <div class="usecase"><span class="dot"></span> إعلانات السوشيال ميديا</div>
+      <div class="usecase"><span class="dot"></span> الريلز والقصص</div>
+      <div class="usecase"><span class="dot"></span> الإعلانات الصوتية</div>
+      <div class="usecase"><span class="dot"></span> الفيديوهات التعليمية</div>
+      <div class="usecase"><span class="dot"></span> التعليق الصوتي لليوتيوب</div>
+    </div>
+  </div>
+</section>
+
+<section id="voices">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">مكتبة الأصوات</div>
+      <h2 class="section-title">اختر الصوت الذي يشبه علامتك التجارية</h2>
+    </div>
+    <div class="voice-grid" id="voiceGrid">
+      <div class="voice-card" data-sample="جربوا العرض الجديد قبل ما ينتهي!">
+        <div class="voice-avatar">ل</div>
+        <div class="voice-name">ليان</div>
+        <div class="voice-dialect">خليجي</div>
+        <div class="voice-sample">"جربوا العرض الجديد قبل ما ينتهي!"</div>
+        <button class="play-btn" aria-label="تشغيل عينة صوت ليان">▶</button>
+      </div>
+      <div class="voice-card" data-sample="منتج جديد يغيّر يومك من أول استخدام.">
+        <div class="voice-avatar">ك</div>
+        <div class="voice-name">كريم</div>
+        <div class="voice-dialect">مصري</div>
+        <div class="voice-sample">"منتج جديد يغيّر يومك من أول استخدام."</div>
+        <button class="play-btn" aria-label="تشغيل عينة صوت كريم">▶</button>
+      </div>
+      <div class="voice-card" data-sample="قصة نجاح تبدأ من هون.">
+        <div class="voice-avatar">س</div>
+        <div class="voice-name">سلمى</div>
+        <div class="voice-dialect">شامي</div>
+        <div class="voice-sample">"قصة نجاح تبدأ من هون."</div>
+        <button class="play-btn" aria-label="تشغيل عينة صوت سلمى">▶</button>
+      </div>
+      <div class="voice-card" data-sample="تفاصيل أكثر، بعد قليل.">
+        <div class="voice-avatar">ع</div>
+        <div class="voice-name">عمر</div>
+        <div class="voice-dialect">فصحى إخباري</div>
+        <div class="voice-sample">"تفاصيل أكثر، بعد قليل."</div>
+        <button class="play-btn" aria-label="تشغيل عينة صوت عمر">▶</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">الأسعار</div>
+      <h2 class="section-title">ابدأ مجانًا، وطوّر مع نمو محتواك</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-tier">تجريبي</div>
+        <div class="price-name">للبدء والاختبار</div>
+        <div class="price-value">مجانًا</div>
+        <ul class="price-list">
+          <li>3 دقائق صوت شهريًا</li>
+          <li>صوتان فقط</li>
+          <li>جودة قياسية</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">ابدأ الآن</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tier">احترافي</div>
+        <div class="price-name">لصنّاع المحتوى</div>
+        <div class="price-value">19$ <span>/ شهريًا</span></div>
+        <ul class="price-list">
+          <li>ساعتان من الصوت شهريًا</li>
+          <li>كل الأصوات واللهجات</li>
+          <li>تصدير بجودة استوديو</li>
+          <li>دعم فني ذو أولوية</li>
+        </ul>
+        <a href="#" class="btn btn-gold">اشترك الآن</a>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">وكالات</div>
+        <div class="price-name">للفرق والوكالات</div>
+        <div class="price-value">مخصص</div>
+        <ul class="price-list">
+          <li>استخدام غير محدود</li>
+          <li>صوت مخصص لعلامتك</li>
+          <li>وصول عبر API</li>
+          <li>مدير حساب مخصص</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">تواصل معنا</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>جاهز يصير لمحتواك صوت يُسمع؟</h2>
+      <p>ابدأ الآن مجانًا، ولا حاجة لبطاقة ائتمان.</p>
+      <a href="#demo" class="btn btn-gold">جرّب نُطق مجانًا</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-inner"
